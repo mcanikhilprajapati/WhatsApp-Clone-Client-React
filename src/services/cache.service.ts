@@ -1,17 +1,21 @@
 import { DataProxy } from 'apollo-cache';
 import { defaultDataIdFromObject } from 'apollo-cache-inmemory';
-import { ApolloClient } from 'apollo-client';
 import * as fragments from '../graphql/fragments';
 import * as queries from '../graphql/queries';
 import {
   MessageFragment,
+  useMessageAddedSubscription,
+  ChatsQuery,
   ChatFragment,
   useMessageAddedSubscription,
   useChatAddedSubscription,
   useChatRemovedSubscription,
 } from '../graphql/types';
 
-type Client = ApolloClient<any> | DataProxy;
+type Client = Pick<
+  DataProxy,
+  'readFragment' | 'writeFragment' | 'readQuery' | 'writeQuery'
+>;
 
 export const useCacheService = () => {
   useMessageAddedSubscription({
@@ -75,7 +79,7 @@ export const writeMessage = (client: Client, message: MessageFragment) => {
 
   let data;
   try {
-    data = client.readQuery({
+    data = client.readQuery<ChatsQuery>({
       query: queries.chats,
     });
   } catch (e) {
@@ -92,7 +96,7 @@ export const writeMessage = (client: Client, message: MessageFragment) => {
 
   const chatIndex = chats.findIndex((c: any) => {
     if (message === null || message.chat === null) return -1;
-    return c.id === message.chat.id;
+    return c.id === message?.chat?.id;
   });
   if (chatIndex === -1) return;
   const chatWhereAdded = chats[chatIndex];
@@ -122,7 +126,7 @@ export const writeChat = (client: Client, chat: ChatFragment) => {
 
   let data;
   try {
-    data = client.readQuery({
+    data = client.readQuery<ChatsQuery>({
       query: queries.chats,
     });
   } catch (e) {
@@ -162,9 +166,9 @@ export const eraseChat = (client: Client, chatId: string) => {
     data: null,
   });
 
-  let data;
+  let data: ChatsQuery | null;
   try {
-    data = client.readQuery({
+    data = client.readQuery<ChatsQuery>({
       query: queries.chats,
     });
   } catch (e) {
